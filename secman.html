@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Shroomies: SEC MAN</title>
+    <title>SEC-MAN Game</title>
     <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Permanent+Marker">
     <style type="text/css">
         body {
             background-color: black;
-            margin: 0;
-            padding: 0;
+            width: 342px;
+            margin: 0px auto;
             font-family: sans-serif;
-            overflow: hidden; /* Prevent scrolling on mobile */
         }
         #pacman {
-            margin: 0 auto;
+            height: 470px;
+            width: 382px;
             border-radius: 5px;
+            margin: 20px auto;
         }
         #shim {
             font-family: 'Permanent Marker', cursive;
@@ -24,41 +25,12 @@
             font-family: 'Permanent Marker', cursive;
             text-align: center;
             color: yellow;
-            margin: 0;
         }
         p {
             text-decoration: none;
             color: #0000FF;
-            text-align: center;
-        }
-        #startButton {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 10px 20px;
-            font-size: 18px;
-            background-color: yellow;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 10;
-        }
-        #startButton:hover {
-            background-color: #ffcc00;
-        }
-        canvas {
-            display: block;
-            width: 100vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain; /* Maintain aspect ratio */
         }
     </style>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script src="https://telegram.org/js/games.js"></script> <!-- Telegram Game SDK -->
 </head>
 <body>
     <header>
@@ -70,13 +42,12 @@
     <h1></h1>
     <p style="text-align:center;"></p>
     <div id="pacman"></div>
-    <button id="startButton">Start Shroomies</button>
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script type="text/javascript">
         /*jslint browser: true, undef: true, eqeqeq: true, nomen: true, white: true */
-        /*global window: false, document: false, TelegramGameProxy: false */
+        /*global window: false, document: false */
 
         var NONE = 4,
             UP = 3,
@@ -101,16 +72,17 @@
                 due = null,
                 ghostImage = null;
 
+            // Preload the ghost images based on the colour/index (order matters for ghostSpecs)
             var ghostImages = [
                 "https://images.squarespace-cdn.com/content/v1/677a050cdb4bf430f287573d/72db28fe-0846-48ac-be05-d698c2b95589/8151050B-E083-4738-9A11-6C99DE699819.PNG?format=750w", // Ghost 1 (cyan-like)
                 "https://images.squarespace-cdn.com/content/v1/677a050cdb4bf430f287573d/478ef441-e87d-4b32-bea2-6adda9d586a3/4DE40349-D40B-4BA1-9DE9-D2C31154BAE8.PNG?format=750w", // Ghost 2 (red-like)
                 "https://images.squarespace-cdn.com/content/v1/677a050cdb4bf430f287573d/be1ea8d0-46b5-4513-9218-ab9727b28ab3/96D717DA-DC16-405D-AC4E-0CB5B5EB9EC5.PNG?format=750w", // Ghost 3 (pink-like)
                 "https://images.squarespace-cdn.com/content/v1/677a050cdb4bf430f287573d/66f3fa8d-a273-4450-b913-d7b759bb3146/97612D47-5257-4B2E-B6D6-06C42E97FD81.PNG?format=750w"  // Ghost 4 (orange-like)
             ];
-            var index = Pacman.Ghost.ghostCount || 0;
+            var index = Pacman.Ghost.ghostCount || 0; // Track the number of ghosts created
             Pacman.Ghost.ghostCount = (Pacman.Ghost.ghostCount || 0) + 1;
             ghostImage = new Image();
-            ghostImage.src = ghostImages[index % 4];
+            ghostImage.src = ghostImages[index % 4]; // Cycle through the 4 images
             ghostImage.onload = function() { console.log("Ghost image " + (index % 4) + " loaded"); };
             ghostImage.onerror = function() { console.error("Failed to load ghost image " + (index % 4)); };
 
@@ -191,15 +163,18 @@
                     top = (position.y / 10) * s,
                     left = (position.x / 10) * s;
 
-                ctx.fillStyle = "#000"; // Clear with black to prevent trails
+                // Clear the area with black background to prevent trails
+                ctx.fillStyle = "#000";
                 ctx.fillRect(left, top, s, s);
 
                 if (eatable && secondsAgo(eatable) > 8) { eatable = null; }
                 if (eaten && secondsAgo(eaten) > 3) { eaten = null; }
 
+                // Draw the ghost image if loaded, scaled to block size
                 if (ghostImage.complete && ghostImage.naturalHeight !== 0) {
                     ctx.drawImage(ghostImage, left, top, s, s);
                 } else {
+                    // Fallback: draw a simple colored shape if the image fails to load
                     ctx.fillStyle = getColour();
                     ctx.beginPath();
                     ctx.moveTo(left, top + s - 3);
@@ -310,41 +285,6 @@
                 return true;
             };
 
-            // Add touch controls for mobile
-            let touchStartX = 0;
-            let touchStartY = 0;
-
-            function handleTouchStart(e) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                touchStartX = touch.clientX;
-                touchStartY = touch.clientY;
-            }
-
-            function handleTouchMove(e) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const deltaX = touch.clientX - touchStartX;
-                const deltaY = touch.clientY - touchStartY;
-
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    if (deltaX > 20) due = RIGHT; // Swipe right
-                    else if (deltaX < -20) due = LEFT; // Swipe left
-                } else {
-                    if (deltaY > 20) due = DOWN; // Swipe down
-                    else if (deltaY < -20) due = UP; // Swipe up
-                }
-            }
-
-            function handleTouchEnd(e) {
-                e.preventDefault();
-                // Reset touch position or handle end of touch
-            }
-
-            document.addEventListener('touchstart', handleTouchStart);
-            document.addEventListener('touchmove', handleTouchMove);
-            document.addEventListener('touchend', handleTouchEnd);
-
             function getNewCoord(dir, current) {
                 return {
                     "x": current.x + (dir === LEFT && -2 || dir === RIGHT && 2 || 0),
@@ -421,16 +361,21 @@
                 if (amount >= 1) { return; }
 
                 ctx.save();
-                ctx.fillStyle = "#000"; // Clear with black
+                // Clear the area with black background
+                ctx.fillStyle = "#000";
                 ctx.fillRect(x, y, size, size);
 
-                var rotation = (Math.PI * 2) * amount; // Spin during death
+                // Calculate rotation angle based on the amount (0 to 1, representing death progress)
+                // Spin faster as death progresses (e.g., 360 degrees * amount for a full spin over 2 seconds)
+                var rotation = (Math.PI * 2) * amount; // Full 360-degree spin over the death animation
 
-                ctx.translate(x + half, y + half);
-                ctx.rotate(rotation);
+                // Translate to the center of the block, rotate, and draw the Pac-Man image
+                ctx.translate(x + half, y + half); // Move to the center of Pac-Man's position
+                ctx.rotate(rotation); // Rotate by the calculated angle
                 if (imageLoaded && pacmanImage.complete && pacmanImage.naturalHeight !== 0) {
-                    ctx.drawImage(pacmanImage, -half, -half, size, size);
+                    ctx.drawImage(pacmanImage, -half, -half, size, size); // Draw centered and scaled
                 } else {
+                    // Fallback: draw a yellow circle if the image fails to load
                     ctx.fillStyle = "#FFFF00";
                     ctx.beginPath();
                     ctx.arc(0, 0, half, 0, Math.PI * 2 * amount, true);
@@ -445,15 +390,13 @@
                     y = (position.y / 10) * s;
 
                 ctx.save();
-                ctx.fillStyle = "#000"; // Clear with black to prevent trails
-                ctx.fillRect(x, y, s, s);
-
-                if (imageLoaded && pacmanImage.complete && pacmanImage.naturalHeight !== 0) {
-                    ctx.drawImage(pacmanImage, x, y, s, s);
+                // No rotation - just draw the image at its fixed orientation
+                if (imageLoaded) {
+                    ctx.drawImage(pacmanImage, x, y, s, s); // Draw at top-left corner of the block
                 } else {
                     ctx.fillStyle = "#FFFF00";
                     ctx.beginPath();
-                    ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2);
+                    ctx.arc(x + s / 2, y + s / 2, s / 2, 0, Math.PI * 2); // Centered fallback circle
                     ctx.fill();
                 }
                 ctx.restore();
@@ -486,6 +429,7 @@
                 biscuitImage = new Image(),
                 pillImage = new Image();
 
+            // Preload the images
             biscuitImage.src = "https://static-00.iconduck.com/assets.00/diamond-icon-2048x1536-hafv11lb.png";
             pillImage.src = "https://images.squarespace-cdn.com/content/v1/677a050cdb4bf430f287573d/94bff839-af72-473e-8856-b8a1c0d983af/A20D2891-5A6B-4BA1-8EE9-054FDD61D410.PNG?format=750w";
 
@@ -500,7 +444,7 @@
 
             function drawWall(ctx) {
                 var i, j, p, line;
-                ctx.strokeStyle = "#00FF00";
+                ctx.strokeStyle = "#00FF00"; // Green walls
                 ctx.lineWidth = 5;
                 ctx.lineCap = "round";
                 for (i = 0; i < Pacman.WALLS.length; i += 1) {
@@ -530,6 +474,7 @@
                 for (var i = 0; i < height; i += 1) {
                     for (var j = 0; j < width; j += 1) {
                         if (map[i][j] === Pacman.PILL) {
+                            // Use the mushroom image for pills, scaled to full block size
                             ctx.drawImage(pillImage, j * blockSize, i * blockSize, blockSize, blockSize);
                         }
                     }
@@ -548,15 +493,16 @@
 
             function drawBlock(y, x, ctx) {
                 var layout = map[y][x];
-                if (layout === Pacman.PILL) { return; }
+                if (layout === Pacman.PILL) { return; } // Pills are handled in drawPills
                 ctx.beginPath();
                 if (layout === Pacman.EMPTY || layout === Pacman.BLOCK) {
                     ctx.fillStyle = "#000";
                     ctx.fillRect((x * blockSize), (y * blockSize), blockSize, blockSize);
                 }
                 if (layout === Pacman.BISCUIT) {
-                    var scaledSize = blockSize * 2 / 3;
-                    var offset = (blockSize - scaledSize) / 2;
+                    // Use the diamond image for biscuits, scaled to 2/3 of block size, centered
+                    var scaledSize = blockSize * 2 / 3; // 12px x 12px (18 * 2/3 = 12)
+                    var offset = (blockSize - scaledSize) / 2; // Center the image in the block
                     ctx.drawImage(biscuitImage, x * blockSize + offset, y * blockSize + offset, scaledSize, scaledSize);
                 }
                 ctx.closePath();
@@ -663,8 +609,9 @@
                 map = null,
                 user = null,
                 stored = null,
-                pacmanLifeImage = new Image();
+                pacmanLifeImage = new Image(); // Preload the Pac-Man life image
 
+            // Preload the Pac-Man life image
             pacmanLifeImage.src = "https://images.squarespace-cdn.com/content/v1/677a050cdb4bf430f287573d/c06bf6e9-c013-4a5d-9822-8bbbfb118c29/image0+%282%29.png?format=750w";
             pacmanLifeImage.onload = function() { console.log("Pac-Man life image loaded"); };
             pacmanLifeImage.onerror = function() { console.error("Failed to load Pac-Man life image"); };
@@ -730,14 +677,18 @@
                     textBase = topLeft + 17,
                     s = map.blockSize;
 
+                // Clear the footer area with black background
                 ctx.fillStyle = "#000000";
                 ctx.fillRect(0, topLeft, (map.width * map.blockSize), 30);
 
+                // Draw Pac-Man life images for each remaining life
                 ctx.fillStyle = "#FFFF00";
                 for (var i = 0, len = user.getLives(); i < len; i++) {
                     if (pacmanLifeImage.complete && pacmanLifeImage.naturalHeight !== 0) {
+                        // Draw the Pac-Man image, scaled to block size, at position 150 + (25 * i)
                         ctx.drawImage(pacmanLifeImage, 150 + (25 * i), topLeft + 1, s, s);
                     } else {
+                        // Fallback: draw the original yellow Pac-Man shape if the image fails to load
                         ctx.beginPath();
                         ctx.moveTo(150 + (25 * i) + s / 2, (topLeft + 1) + s / 2);
                         ctx.arc(150 + (25 * i) + s / 2, (topLeft + 1) + s / 2, s / 2, Math.PI * 0.25, Math.PI * 1.75, false);
@@ -745,10 +696,12 @@
                     }
                 }
 
+                // Draw sound toggle indicator
                 ctx.fillStyle = !soundDisabled() ? "#00FF00" : "#FF0000";
                 ctx.font = "bold 16px sans-serif";
                 ctx.fillText("s", 10, textBase);
 
+                // Draw score and level text
                 ctx.fillStyle = "#FFFF00";
                 ctx.font = "14px Calibri";
                 ctx.fillText("Score: " + user.theScore(), 30, textBase);
@@ -757,8 +710,10 @@
 
             function redrawBlock(pos) {
                 var s = map.blockSize;
+                // Clear the block with black background
                 ctx.fillStyle = "#000";
                 ctx.fillRect((pos.x / 10) * s, (pos.y / 10) * s, s, s);
+                // Redraw the block from the map
                 map.drawBlock(Math.floor(pos.y / 10), Math.floor(pos.x / 10), ctx);
                 map.drawBlock(Math.ceil(pos.y / 10), Math.ceil(pos.x / 10), ctx);
             };
@@ -768,12 +723,14 @@
                 ghostPos = [];
                 for (i = 0, len = ghosts.length; i < len; i += 1) {
                     ghostPos.push(ghosts[i].move(ctx));
+                    // Clear the ghost's old position with black to prevent trails
                     var oldPos = ghostPos[i].old;
                     var s = map.blockSize;
                     ctx.fillStyle = "#000";
                     ctx.fillRect((oldPos.x / 10) * s, (oldPos.y / 10) * s, s, s);
                 }
                 u = user.move(ctx);
+                // Clear the user's old position with black
                 var userOldPos = u.old;
                 var s = map.blockSize;
                 ctx.fillStyle = "#000";
@@ -824,6 +781,7 @@
                             redrawBlock(ghostPos[i].old);
                             ghostPos.push(ghosts[i].draw(ctx));
                         }
+                        // Draw spinning Pac-Man during death
                         user.drawDead(ctx, (tick - timerStart) / (Pacman.FPS * 2));
                     }
                 } else if (state === COUNTDOWN) {
@@ -862,7 +820,7 @@
             function init(wrapper, root) {
                 console.log("Initializing PACMAN...");
                 var i, len, ghost,
-                    blockSize = Math.min(wrapper.offsetWidth / 19, window.innerHeight / 22), // Dynamic size for responsiveness
+                    blockSize = wrapper.offsetWidth / 19,
                     canvas = document.createElement("canvas");
                 canvas.setAttribute("width", (blockSize * 19) + "px");
                 canvas.setAttribute("height", (blockSize * 22) + 30 + "px");
@@ -877,13 +835,6 @@
                 }
                 map.draw(ctx);
                 dialog("Loading ...");
-
-                // Handle Telegram initialization
-                if (window.TelegramGameProxy) {
-                    TelegramGameProxy.init();
-                    document.getElementById('startButton').style.display = 'block';
-                }
-
                 var extension = Modernizr.audio.ogg ? 'ogg' : 'mp3';
                 var audio_files = [
                     ["start", root + "audio/opening_song." + extension],
@@ -905,14 +856,10 @@
             };
 
             function loaded() {
-                console.log("Game loaded, press N or tap Start to begin");
-                dialog("Press N or tap Start to Start");
+                console.log("Game loaded, press N to start");
+                dialog("Press N to Start");
                 document.addEventListener("keydown", keyDown, true);
                 document.addEventListener("keypress", keyPress, true);
-                document.getElementById('startButton').addEventListener('click', function() {
-                    startNewGame();
-                    this.style.display = 'none';
-                });
                 timer = window.setInterval(mainLoop, 1000 / Pacman.FPS);
             };
 
